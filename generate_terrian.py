@@ -134,37 +134,44 @@ def apply_smart_jitter(terrain_obj,jitter_intensity=3, height_weight=0.6, slope_
 
 def smooth_height_by_slope(terrain_obj, base_smoothing_factor=0.1, slope_exponent=2, iteration_count=3):
     """Apply stronger smoothing to vertices with lower slope"""
+    key_name = animation.add_shape_key(terrain_obj, cfg.SMOOTH_TERRAIN)
+    keys = terrain_obj.data.shape_keys.key_blocks
+
+    prev_key = keys[-2]
+    key_block = keys[-1]
+
     bmesh_data = bmesh.new()
     bmesh_data.from_mesh(terrain_obj.data)
 
-    vertices = bmesh_data.verts
-    vertex_count = len(vertices)
+    bmesh_data.verts.ensure_lookup_table()
+    bmvert = bmesh_data.verts
     slope_values = compute_slope(terrain_obj)
 
+    z_values = np.array([p.co.z for p in prev_key.data])
+    slope_values = compute_slope(terrain_obj, prev_key)
+
     for _ in range(iteration_count):
-        new_z_values = np.zeros(vertex_count)
-        for i, vertex in enumerate(vertices):
-            neighbors = [edge.other_vert(vertex) for edge in vertex.link_edges]
+        new_z_values = np.zeros(len(bmvert))
+        for i, vert_prev in enumerate(prev_key.data):
+            neighbors = [edge.other_vert(bmvert[i]) for edge in bmvert[i].link_edges]
             if not neighbors:
-                new_z_values[i] = vertex.co.z
+                new_z_values[i] = vert_prev.co.z
                 continue
 
             # Average height of neighbors
-            neighbor_avg_height = np.mean([neighbor.co.z for neighbor in neighbors])
+            neighbor_avg_height = np.mean([prev_key.data[n.index].co.z for n in neighbors])
 
             # Slope weight control
             slope = slope_values[i]
             smoothing_weight = base_smoothing_factor * (1 - slope**slope_exponent)
 
             # Linear interpolation between original and neighbor average
-            new_z_values[i] = (1 - smoothing_weight) * vertex.co.z + smoothing_weight * neighbor_avg_height
+            new_z_values[i] = (1 - smoothing_weight) * vert_prev.co.z + smoothing_weight * neighbor_avg_height
 
         # Apply updates
-        for i, vertex in enumerate(vertices):
-            vertex.co.z = new_z_values[i]
+        for i, p in enumerate(key_block.data):
+            p.co.z = new_z_values[i] - prev_key.data[i].co.z
 
-    bmesh_data.to_mesh(terrain_obj.data)
     bmesh_data.free()
     terrain_obj.data.update()
-    animation.add_shape_key(terrain_obj, cfg.SMOOTH_TERRAIN)
     print("Slope-dependent smoothing applied")
