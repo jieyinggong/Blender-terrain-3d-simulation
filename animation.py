@@ -27,21 +27,15 @@ def animate_shape_keys(obj, shape_key_list,
     for key_name in shape_key_list:
         key = key_blocks[key_name]
 
-        # fade in
+       # fade in
         key.value = 0.0
         key.keyframe_insert("value", frame=current_frame)
 
         key.value = 1.0
         key.keyframe_insert("value", frame=current_frame + fade)
 
-        # hold
+        # keep ON 
         key.value = 1.0
-        key.keyframe_insert("value", frame=current_frame + stage_length - fade)
-
-        # fade out
-        key.value = 0.0
         key.keyframe_insert("value", frame=current_frame + stage_length)
 
         current_frame += stage_length
-
-
