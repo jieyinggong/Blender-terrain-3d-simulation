@@ -43,7 +43,7 @@ def get_final_height_range(obj, end_key_name):
 
 def render_terrain_color(terrain_obj):
 
-    z_min, z_max = get_final_height_range(terrain_obj)
+    z_min, z_max = get_final_height_range(terrain_obj, cfg.APPLY_JITTER)
     z_max = 1.05 * z_max  # Slightly extend max for better color gradation
 
     print(f"Detected terrain height range: {z_min:.3f} to {z_max:.3f}")
