@@ -42,7 +42,10 @@ def get_final_height_range(obj, end_key_name):
     return z_min, z_max
 
 def render_terrain_color(terrain_obj):
-    z_min, z_max = get_final_height_range(terrain_obj, cfg.APPLY_JITTER)
+
+    z_min, z_max = get_final_height_range(terrain_obj)
+    z_max = 1.05 * z_max  # Slightly extend max for better color gradation
+
     print(f"Detected terrain height range: {z_min:.3f} to {z_max:.3f}")
 
     # Material and nodes setup
@@ -87,16 +90,16 @@ def render_terrain_color(terrain_obj):
     color_ramp.interpolation = cfg.COLOR_INTERPOLATION
 
     color_ramp.elements[0].position = 0.0
-    color_ramp.elements[0].color = (0.04, 0.15, 0.04, 1.0)
+    color_ramp.elements[0].color = (0.02, 0.09, 0.02, 1.0)
 
     # 4 color stops
-    e1 = color_ramp.elements.new(0.33)
-    e2 = color_ramp.elements.new(0.66)
+    e1 = color_ramp.elements.new(0.45)
+    e2 = color_ramp.elements.new(0.8)
     e3 = color_ramp.elements.new(1.00)
 
     # Set colors
-    e1.color = (0.45, 0.35, 0.12, 1.0)   # Dirt Brown
-    e2.color = (0.25, 0.25, 0.28, 1.0)   # Rocky Gray
+    e1.color = (0.2, 0.08, 0.02, 1.0)   # Dirt Brown
+    e2.color = (0.5, 0.4, 0.4, 1.0)   # Rocky Gray
     e3.color = (0.9, 0.9, 0.9, 1.0)      # Snow White
 
     # Node connections
