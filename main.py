@@ -60,7 +60,7 @@ def main():
     print(f"Terrain: {terrain.name} (size=±{cfg.TERRAIN_SIZE}, resolution={cfg.TERRAIN_RESOLUTION})")
 
     # Deform terrain
-    generate.deform_terrain(terrain, terrain_mode="mountain")
+    generate.deform_orchestrator(terrain)
     print("Terrain deformed")
 
     # add noise
