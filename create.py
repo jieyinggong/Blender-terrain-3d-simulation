@@ -3,6 +3,7 @@ import bmesh
 from mathutils import Vector
 
 import config_para as cfg
+import animation
 
 
 def ensure_collection(collection_name: str) -> bpy.types.Collection:
@@ -88,4 +89,5 @@ def create_flat_terrain(size=cfg.TERRAIN_SIZE, resolution=cfg.TERRAIN_RESOLUTION
     bmesh_data.to_mesh(mesh)
     bmesh_data.free()
     mesh.update()
+    
     return terrain_obj

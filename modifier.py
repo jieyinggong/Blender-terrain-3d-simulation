@@ -1,5 +1,6 @@
 import bpy
-import config_para
+import config_para as cfg
+import animation
 
 def modify_terrain(terrain_obj):
     # Clean up existing modifiers to avoid duplication
@@ -46,5 +47,7 @@ def modify_terrain(terrain_obj):
 
     # smooth after displace
     terrain_obj.modifiers.move(len(terrain_obj.modifiers)-1, 0)
+
+    animation.add_shape_key(terrain_obj, cfg.MODIFY_TERRAIN)
 
     print("Terrain modifiers applied successfully")

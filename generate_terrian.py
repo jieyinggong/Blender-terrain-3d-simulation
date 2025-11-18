@@ -6,24 +6,31 @@ import numpy as np
 from mathutils import Vector
 
 import config_para as cfg
+import animation
 
 
 # helpers 
     
-def compute_slope(terrain_obj):
+def compute_slope(terrain_obj, shape_key=None):
     """Calculate local slope for each vertex using BMesh"""
     bmesh_data = bmesh.new()
     bmesh_data.from_mesh(terrain_obj.data)
+    bm_verts = bmesh_data.verts
 
-    vertices = bmesh_data.verts
-    vertex_count = len(vertices)
+    vertex_count = len(bm_verts)
     slope_values = np.zeros(vertex_count)
 
-    for i, vertex in enumerate(vertices):
-        neighbors = [edge.other_vert(vertex) for edge in vertex.link_edges]
+    if shape_key:
+        coords = [v.co.copy() for v in shape_key.data]  # shape key 
+    else:
+        coords = [v.co.copy() for v in terrain_obj.data.vertices]  # mesh
+
+    for i, bm_vert in enumerate(bm_verts):
+        neighbors = [edge.other_vert(bm_vert) for edge in bm_vert.link_edges]
+
         if not neighbors:
             continue
-        height_diff = np.mean([abs(neighbor.co.z - vertex.co.z) for neighbor in neighbors])
+        height_diff = np.mean([abs(neighbor.co.z - bm_vert.co.z) for neighbor in neighbors])
         slope_values[i] = height_diff
 
     # Clean up BMesh memory
@@ -34,9 +41,11 @@ def compute_slope(terrain_obj):
     slope_values = (slope_values - slope_min) / (slope_max - slope_min + 1e-6)
     return slope_values
 
-def compute_height_normalization(terrain_obj):
+def compute_height_normalization(terrain_obj, shape_key = None):
     """Normalize height values to 0-1 range"""
-    z_coordinates = [vertex.co.z for vertex in terrain_obj.data.vertices]
+    data = shape_key.data if shape_key else terrain_obj.data.vertices
+    print("debug: use shape key or terrian", shape_key is not None)
+    z_coordinates = [vertex.co.z for vertex in data]
     z_min, z_max = min(z_coordinates), max(z_coordinates)
     z_range = max(z_max - z_min, 1e-6)
     return [(z - z_min) / z_range for z in z_coordinates]
@@ -72,7 +81,11 @@ def asymmetric_jitter(x, y, intensity=cfg.RANDOMNESS_FACTOR):
 
 def deform_terrain(terrain_obj, terrain_mode="mountain"):
     """Generate base terrain with different modes"""
-    for vertex in terrain_obj.data.vertices:
+
+    key_name = animation.add_shape_key(terrain_obj, cfg.DEFORM_TERRAIN)
+    key_block = terrain_obj.data.shape_keys.key_blocks[key_name]
+
+    for i, vertex in enumerate(key_block.data):
         x, y = vertex.co.x, vertex.co.y
         radius = math.sqrt(x**2 + y**2)
 
@@ -89,23 +102,35 @@ def deform_terrain(terrain_obj, terrain_mode="mountain"):
     terrain_obj.data.update()
     print(f"Base terrain generation completed: mode = {terrain_mode}")
 
-def apply_smart_jitter(terrain_obj, jitter_intensity=3, height_weight=0.6, slope_weight=0.4,
+def apply_smart_jitter(terrain_obj,jitter_intensity=3, height_weight=0.6, slope_weight=0.4,
                       height_exponent=1.2, slope_exponent=1.2, noise_strength=5):
     """Apply disturbance based on height and slope: higher and steeper areas get more variation"""
-    height_norms = compute_height_normalization(terrain_obj)
-    slope_values = compute_slope(terrain_obj)
+
+    key_name = animation.add_shape_key(terrain_obj, cfg.APPLY_JITTER)
+    keys = terrain_obj.data.shape_keys.key_blocks  
+
+    prev_key = keys[-2]      
+    key_block = keys[-1]   
+
+    print("debug: key names:", prev_key.name, key_block.name)   
+
+    height_norms = compute_height_normalization(terrain_obj, prev_key)
+    slope_values = compute_slope(terrain_obj, prev_key)
     weights = compute_jitter_weight(height_norms, slope_values, height_weight, slope_weight, 
                                   height_exponent, slope_exponent)
 
-    for i, vertex in enumerate(terrain_obj.data.vertices):
-        x, y, z = vertex.co
+
+    for i in range(len(prev_key.data)):
+        x, y, z = prev_key.data[i].co
         geometric_jitter = (random.random() - 0.5) * 2.0 * jitter_intensity * weights[i]
         spatial_jitter = asymmetric_jitter(x, y)
         combined_jitter = geometric_jitter * (1 + noise_strength * spatial_jitter)
-        vertex.co.z = max(vertex.co.z + combined_jitter, 0.0)
+        if combined_jitter + z < 0:
+            combined_jitter = -z  # prevent going below zero height
+        key_block.data[i].co.z = combined_jitter
 
     terrain_obj.data.update()
-    print("Height and slope dependent jitter applied")    
+    print("Height and slope dependent jitter applied111")    
 
 def smooth_height_by_slope(terrain_obj, base_smoothing_factor=0.1, slope_exponent=2, iteration_count=3):
     """Apply stronger smoothing to vertices with lower slope"""
@@ -141,4 +166,5 @@ def smooth_height_by_slope(terrain_obj, base_smoothing_factor=0.1, slope_exponen
     bmesh_data.to_mesh(terrain_obj.data)
     bmesh_data.free()
     terrain_obj.data.update()
+    animation.add_shape_key(terrain_obj, cfg.SMOOTH_TERRAIN)
     print("Slope-dependent smoothing applied")

@@ -1,10 +1,11 @@
 import bpy
 
 import config_para as cfg
+import animation
 
-def render_terrian_color(terrian_obj):
+def render_terrain_color(terrain_obj):
     # Calculate terrain height range
-    z_values = [v.co.z for v in terrian_obj.data.vertices]
+    z_values = [v.co.z for v in terrain_obj.data.vertices]
     z_min, z_max = min(z_values), max(z_values)
     print(f"Detected terrain height range: {z_min:.3f} to {z_max:.3f}")
 
@@ -63,10 +64,12 @@ def render_terrian_color(terrian_obj):
     links.new(bsdf_node.outputs["BSDF"], output_node.inputs["Surface"])
 
     # Apply material to terrain
-    if terrian_obj.data.materials:
-        terrian_obj.data.materials[0] = material
+    if terrain_obj.data.materials:
+        terrain_obj.data.materials[0] = material
     else:
-        terrian_obj.data.materials.append(material)
+        terrain_obj.data.materials.append(material)
+
+    animation.add_shape_key(terrain_obj, cfg.RENDER_COLOR)
 
     print("Material applied successfully")
     print(f"Nonlinear exponent: {cfg.POWER_EXPONENT}, interpolation: {cfg.COLOR_INTERPOLATION}")

@@ -28,3 +28,21 @@ RANDOMNESS_FACTOR = 0.4 # default 0.4
 # Configuration parameters
 POWER_EXPONENT = 1.7
 COLOR_INTERPOLATION = 'B_SPLINE'
+
+#animation
+#key names
+BASIS = "Basis"
+DEFORM_TERRAIN = "DeformTerrain"
+APPLY_JITTER = "ApplyJitter"
+SMOOTH_TERRAIN = "SmoothTerrain"
+MODIFY_TERRAIN = "ModifyTerrain"
+RENDER_COLOR = "RenderColor"
+
+SHAPE_KEY_ORDER = [
+    BASIS,
+    DEFORM_TERRAIN,
+    APPLY_JITTER,   
+    SMOOTH_TERRAIN,
+    MODIFY_TERRAIN,
+    RENDER_COLOR
+]

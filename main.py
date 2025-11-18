@@ -2,15 +2,23 @@ import os
 import sys
 
 import bpy
+import importlib
+
+current_dir = os.path.dirname(__file__)
+if current_dir not in sys.path:
+    sys.path.append(current_dir)
+
+print("Added to sys.path:", current_dir)
 
 print("Importing modules...")
 print("Current working directory:", os.getcwd())
 print("__file_:", __file__)
+
 import create
 import generate_terrian as generate
 import modifier
 import render_color as render
-
+import animation
 import config_para as cfg
 
 # check module paths
@@ -21,6 +29,14 @@ import config_para as cfg
 # print("config_para module path:", cfg.__file__)
 
 print("Modules imported successfully.")
+
+# Force reload 
+importlib.reload(create)
+importlib.reload(generate)
+importlib.reload(modifier)
+importlib.reload(animation)
+importlib.reload(render)
+importlib.reload(cfg)
 
 # check main
 print("__name__:", __name__)
@@ -52,13 +68,15 @@ def main():
     generate.apply_smart_jitter(terrain)
     generate.smooth_height_by_slope(terrain)
     bpy.context.view_layer.update()
-    print("Terrain generation and disturbance overlay successful")
+   # print("Terrain generation and disturbance overlay successful")
 
     # Modify terrain with modifiers
     modifier.modify_terrain(terrain)
 
     # Render terrain color
-    render.render_terrian_color(terrain)
+    render.render_terrain_color(terrain)
+
+    animation.animate_shape_keys(terrain, cfg.SHAPE_KEY_ORDER)
 
     print("Terrain setup complete!")
 
