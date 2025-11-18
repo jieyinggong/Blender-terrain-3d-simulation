@@ -39,3 +39,14 @@ def animate_shape_keys(obj, shape_key_list,
         key.keyframe_insert("value", frame=current_frame + stage_length)
 
         current_frame += stage_length
+
+def animate_color_material_fade(mix_node, fade_start=240, fade_end=280):
+    fac = mix_node.inputs["Fac"]
+
+    fac.default_value = 0.0
+    fac.keyframe_insert("default_value", frame=fade_start)
+
+    fac.default_value = 1.0
+    fac.keyframe_insert("default_value", frame=fade_end)
+
+    print(f"[Animation] Material fade added from {fade_start} to {fade_end}")

@@ -3,10 +3,13 @@ import bpy
 import config_para as cfg
 import animation
 
+def get_final_height_range(obj):
+    key = obj.data.shape_keys.key_blocks[cfg.DEFORM_TERRAIN]
+    z_values = [p.co.z for p in key.data]
+    return min(z_values), max(z_values)
+
 def render_terrain_color(terrain_obj):
-    # Calculate terrain height range
-    z_values = [v.co.z for v in terrain_obj.data.vertices]
-    z_min, z_max = min(z_values), max(z_values)
+    z_min, z_max = get_final_height_range(terrain_obj)
     print(f"Detected terrain height range: {z_min:.3f} to {z_max:.3f}")
 
     # Material and nodes setup
@@ -49,11 +52,19 @@ def render_terrain_color(terrain_obj):
     # Color ramp config
     color_ramp = color_ramp_node.color_ramp
     color_ramp.interpolation = cfg.COLOR_INTERPOLATION
-    color_ramp.elements[0].color = (0.03, 0.1, 0.03, 1.0)  # Low elevation - green
-    mid_element = color_ramp.elements.new(0.55)
-    mid_element.color = (0.075, 0.1, 0.045, 1.0)  # Mid elevation - brown
-    color_ramp.elements[1].position = 0.85
-    color_ramp.elements[1].color = (0.9, 0.9, 0.9, 1.0)  # High elevation - snow
+
+    color_ramp.elements[0].position = 0.0
+    color_ramp.elements[0].color = (0.04, 0.15, 0.04, 1.0)
+
+    # 4 color stops
+    e1 = color_ramp.elements.new(0.33)
+    e2 = color_ramp.elements.new(0.66)
+    e3 = color_ramp.elements.new(1.00)
+
+    # Set colors
+    e1.color = (0.45, 0.35, 0.12, 1.0)   # Dirt Brown
+    e2.color = (0.25, 0.25, 0.28, 1.0)   # Rocky Gray
+    e3.color = (0.9, 0.9, 0.9, 1.0)      # Snow White
 
     # Node connections
     links.new(texcoord_node.outputs["Object"], sep_xyz_node.inputs["Vector"])
@@ -69,7 +80,39 @@ def render_terrain_color(terrain_obj):
     else:
         terrain_obj.data.materials.append(material)
 
-    animation.add_shape_key(terrain_obj, cfg.RENDER_COLOR)
 
     print("Material applied successfully")
     print(f"Nonlinear exponent: {cfg.POWER_EXPONENT}, interpolation: {cfg.COLOR_INTERPOLATION}")
+
+    return {
+        "tree": material.node_tree,
+        "bsdf": bsdf_node,
+        "output": output_node
+    }
+
+def setup_mixshader_fade(tree, bsdf_node, output_node):
+    nodes = tree.nodes
+    links = tree.links
+
+    # White Shader (Shader1)
+    white = nodes.new("ShaderNodeBsdfDiffuse")
+    white.location = (600, -200)
+    white.inputs["Color"].default_value = (0.15, 0.15, 0.15, 1)
+
+    # MixShader
+    mix = nodes.new("ShaderNodeMixShader")
+    mix.location = (900, -100)
+    mix.inputs["Fac"].default_value = 0.0  # Start with white
+
+    # Connect White → Mix.Shader1
+    links.new(white.outputs["BSDF"], mix.inputs[1])
+
+    # Connect Colored BSDF → Mix.Shader2
+    links.new(bsdf_node.outputs["BSDF"], mix.inputs[2])
+
+    # MixShader → Output
+    links.new(mix.outputs["Shader"], output_node.inputs["Surface"])
+
+    print("[MixShader] Created material fade setup.")
+
+    return mix

@@ -50,8 +50,8 @@ def modify_terrain(terrain_obj):
 
     terrain_obj.data.update()
     print("modify_terrain shape key complete:", new_key.name)
-    print("=== DEBUG: ALL SHAPE KEYS ===")
-    for key in terrain_obj.data.shape_keys.key_blocks:
-        print("   ", key.name)
+    # print("=== DEBUG: ALL SHAPE KEYS ===")
+    # for key in terrain_obj.data.shape_keys.key_blocks:
+    #     print("   ", key.name)
 
     print("Terrain modifiers applied successfully")
