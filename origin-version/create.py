@@ -2,7 +2,14 @@ import bpy
 import bmesh
 from mathutils import Vector
 
-import config_para as cfg
+# Configuration parameters
+COLLECTION_NAME = "MountainDemo"
+TERRAIN_OBJECT_NAME = "Terrain"
+PLATFORM_NAME = "LandingPad"
+
+# Terrain parameters
+TERRAIN_SIZE = 60.0
+TERRAIN_RESOLUTION = 120
 
 
 def ensure_collection(collection_name: str) -> bpy.types.Collection:
@@ -59,10 +66,10 @@ def add_wireframe_modifier(obj, wireframe_thickness=0.02):
     wireframe_modifier.material_offset = 1
 
 # Terrain creation functions
-def create_flat_terrain(size=cfg.TERRAIN_SIZE, resolution=cfg.TERRAIN_RESOLUTION) -> bpy.types.Object:
+def create_flat_terrain(size=TERRAIN_SIZE, resolution=TERRAIN_RESOLUTION) -> bpy.types.Object:
     """Generate flat plane mesh centered at origin"""
-    mesh = bpy.data.meshes.new(f"{cfg.TERRAIN_OBJECT_NAME}Mesh")
-    terrain_obj = bpy.data.objects.new(cfg.TERRAIN_OBJECT_NAME, mesh)
+    mesh = bpy.data.meshes.new(f"{TERRAIN_OBJECT_NAME}Mesh")
+    terrain_obj = bpy.data.objects.new(TERRAIN_OBJECT_NAME, mesh)
     bmesh_data = bmesh.new()
 
     # Create vertices
@@ -89,3 +96,22 @@ def create_flat_terrain(size=cfg.TERRAIN_SIZE, resolution=cfg.TERRAIN_RESOLUTION
     bmesh_data.free()
     mesh.update()
     return terrain_obj
+
+def main():
+    collection = ensure_collection(COLLECTION_NAME)
+    purge_collection_objects(collection)
+
+    terrain = create_flat_terrain()
+
+    link_object_to_collection(collection, terrain)
+
+    # Add colors and wireframe
+    add_material_color(terrain, (0.1, 0.6, 0.1))  # Green terrain
+    add_wireframe_modifier(terrain, wireframe_thickness=0.02) # Wireframe for terrain
+
+    print("Plane created")
+    print(f"Terrain: {terrain.name} (size=±{TERRAIN_SIZE}, resolution={TERRAIN_RESOLUTION})")
+ 
+
+if __name__ == "__main__":
+    main()
