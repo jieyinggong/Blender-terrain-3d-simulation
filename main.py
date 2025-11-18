@@ -77,12 +77,10 @@ def main():
     mix_node = render.setup_mixshader_fade(context["tree"], context["bsdf"], context["output"])
 
     animation.animate_shape_keys(terrain, cfg.SHAPE_KEY_ORDER)
-    animation.animate_color_material_fade(mix_node,
-                                          fade_start=len(cfg.SHAPE_KEY_ORDER)*40,
-                                          fade_end=len(cfg.SHAPE_KEY_ORDER)*40 + 50)
-    # Render terrain color
-   #  render.render_terrain_color(terrain)
-    # animation.animate_color_fade(terrain, cfg.RENDER_COLOR, start_frame=len(cfg.SHAPE_KEY_ORDER)*40, fade_length=40)
+    fade_start = len(cfg.SHAPE_KEY_ORDER) * 40
+    fade_end = fade_start + 50
+    animation.animate_color_material_fade(mix_node, fade_start, fade_end)
+    bpy.context.scene.frame_end = fade_end + 100
 
     print("Terrain setup complete!")
 
