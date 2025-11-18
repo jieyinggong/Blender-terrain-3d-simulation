@@ -2,14 +2,47 @@ import bpy
 
 import config_para as cfg
 import animation
+import generate_terrian as generate
 
-def get_final_height_range(obj):
-    key = obj.data.shape_keys.key_blocks[cfg.DEFORM_TERRAIN]
-    z_values = [p.co.z for p in key.data]
-    return min(z_values), max(z_values)
+def get_final_height_range(obj, end_key_name):
+    """Accumulate shape key deltas from Basis (0) to end_key_name, return z_min/z_max."""
+    
+    shape_keys = getattr(obj.data, "shape_keys", None)
+    if not shape_keys:
+        return 0.0, 0.0
+
+    kb = shape_keys.key_blocks
+    if end_key_name not in kb:
+        print(f"[WARNING] Shape key {end_key_name} not found!")
+        return 0.0, 0.0
+
+    end_index = kb.find(end_key_name)
+    vert_count = len(obj.data.vertices)
+
+    z_values = []
+
+    for i in range(vert_count):
+        # Start at Basis
+        total_z = kb[0].data[i].co.z
+
+        # Accumulate all shape keys from 1 → end_index
+        for idx in range(1, end_index + 1):
+            total_z += kb[idx].data[i].co.z
+
+        z_values.append(total_z)
+
+    z_min = min(z_values)
+    z_max = max(z_values)
+
+    # Avoid zero division
+    if abs(z_max - z_min) < 1e-6:
+        z_min -= 1e-4
+        z_max += 1e-4
+
+    return z_min, z_max
 
 def render_terrain_color(terrain_obj):
-    z_min, z_max = get_final_height_range(terrain_obj)
+    z_min, z_max = get_final_height_range(terrain_obj, cfg.APPLY_JITTER)
     print(f"Detected terrain height range: {z_min:.3f} to {z_max:.3f}")
 
     # Material and nodes setup
